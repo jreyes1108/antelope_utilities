@@ -58,7 +58,7 @@ from collections import defaultdict
 
 # GLOBALS
 APP_ID  = '##'
-API_KEY = '########################'
+API_KEY = '###################################################'
 SERVICE = 'http://api.askgeo.com/v1/'
 
 def configure():
@@ -121,17 +121,16 @@ def main():
     if verbosity > 0: logfmt("Open up db '%s'" % db)
     dbptr = datascope.dbopen(db, 'r')
     if verbosity > 0: logfmt("Lookup origin")
-    dbptr_o = datascope.dblookup(dbptr, '', 'origin', '', '')
-    if verbosity > 0: logfmt("Join origerr")
-    dbptr_oe = datascope.dbjoin(dbptr_o, 'origerr')
+    dbptr= datascope.dblookup(dbptr, '', 'origin', '', '')
     if verbosity > 0: logfmt("Outer join netmag")
-    dbptr_oen = datascope.dbjoin(dbptr_oe, 'netmag', outer=True)
+    dbptr= datascope.dbjoin(dbptr, 'netmag', outer=True)
+
+    logfmt('Got: %s' % datascope.dbnrecs( dbptr ) )
 
     fields = ('time',
               'lat',
               'lon',
               'depth',
-              'sdobs',
               'ndef',
               'ms',
               'mb',
@@ -146,11 +145,11 @@ def main():
     results = defaultdict(dict)
 
     if verbosity > 0: logfmt("Loop over records")
-    for i in range(datascope.dbquery(dbptr_oen, 'dbRECORD_COUNT')):
-        dbptr_oen[3] = i
+    for i in range(datascope.dbquery(dbptr, 'dbRECORD_COUNT')):
+        dbptr[3] = i
         record = []
         for f in fields:
-            results[i][f] = datascope.dbgetv(dbptr_oen, f)[0]
+            results[i][f] = datascope.dbgetv(dbptr, f)[0]
 
     if verbosity > 0: logfmt("Add timezone and local time string conversion")
 
@@ -171,8 +170,9 @@ def main():
             time_zone    = clean_json['data'][0]['TimeZone']['TimeZoneId']
             win_standard = clean_json['data'][0]['TimeZone']['WindowsStandardName']
             short_name   = clean_json['data'][0]['TimeZone']['ShortName']
+            id   = clean_json['data'][0]['TimeZone']['TimeZoneId']
 
-            local_time_str = epoch2str(results[i]['time'], "%Y-%m-%d %H:%M:%S", tz='%s' % short_name)
+            local_time_str = epoch2str(results[i]['time'], "%Y-%m-%d %H:%M:%S", tz='%s' % id)
             local_time = str2epoch(local_time_str) 
             print "Lat: %s, Lon: %s, Time: %s (%s), Local Time: %s (%s), Time Zone: %s" % (results[i]['lat'], results[i]['lon'], results[i]['time'], time_str, local_time, local_time_str, short_name)
 
